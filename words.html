@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语学习工作台 · 词库</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.lib-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.lib-toolbar .select { min-width: 180px; }
+.lib-toolbar .search { flex: 1; min-width: 200px; }
+.lib-toolbar .spacer { flex: 1; }
+.lib-count-total { font-family: var(--font-mono); font-size: .82rem; color: var(--accent); }
+
+/* 单词卡片列表 */
+.word-list { display: flex; flex-direction: column; gap: 8px; }
+.word-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: var(--bg-elevated); border: 1px solid var(--line);
+  border-radius: var(--radius-card); padding: 14px 16px;
+  transition: border-color .18s ease;
+}
+.word-row:hover { border-color: var(--accent); }
+.word-main { flex: 0 0 220px; }
+.word-main .w { font-size: 1.1rem; font-weight: 750; }
+.word-main .p { font-family: var(--font-mono); font-size: .78rem; color: var(--ink-2); margin-top: 2px; }
+.word-main .pos { font-size: .74rem; color: var(--ink-3); }
+.word-detail { flex: 1; font-size: .85rem; color: var(--ink-2); line-height: 1.7; }
+.word-detail .cn { color: var(--ink); font-weight: 600; font-size: .9rem; margin-bottom: 4px; }
+.word-detail .phrase-item { display: block; }
+.word-detail .sent-item { display: block; color: var(--ink-3); }
+.word-detail .rem { display: block; margin-top: 4px; padding: 6px 10px; background: var(--accent-softer); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .76rem; color: var(--ink); }
+
+/* 分页 */
+.pager { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 18px; }
+.pager .info { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="brand"><span class="brand-mark">EN</span>英语学习工作台</div>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="index.html">水平测评</a>
+    <a class="nav-link" href="study.html">学习任务</a>
+    <a class="nav-link active" href="words.html">词库</a>
+    <span id="navLevel" class="badge-level" style="display:none"></span>
+  </div>
+</nav>
+
+<main class="container page">
+  <h1 class="display" style="margin-bottom:6px">单词库</h1>
+  <p class="sub" style="margin-bottom:20px">15219 个词条，覆盖人教小学到大学六级。点「听」可发音，方便随时查阅复习。</p>
+
+  <div class="lib-toolbar">
+    <select class="select" id="selLevel" onchange="loadWords(1)"></select>
+    <input class="input search" id="searchBox" placeholder="搜索单词或中文释义" onkeydown="if(event.key==='Enter')loadWords(1)">
+    <button class="btn btn-soft btn-sm" onclick="loadWords(1)">搜索</button>
+    <div class="spacer"></div>
+    <span class="lib-count-total" id="totalLabel"></span>
+  </div>
+
+  <div id="wordBox"><div class="loading-block"><span class="spinner"></span>加载词库</div></div>
+  <div class="pager" id="pager"></div>
+</main>
+
+<footer class="footer">英语学习工作台 · 词库数据来自公开整理的人教版与四六级词汇表</footer>
+
+<script src="app.js"></script>
+<script>
+let curLevel = "cet4";
+let curPage = 1;
+let totalWords = 0;
+const PER = 50;
+
+(async function init() {
+  const qs = new URLSearchParams(location.search);
+  const pre = qs.get("level");
+  const sel = $("#selLevel");
+  sel.innerHTML = Object.entries(LEVELS).map(([k, v]) =>
+    `<option value="${k}" ${k === pre ? "selected" : ""}>${v}</option>`).join("");
+  if (pre) curLevel = pre;
+  const st = loadState();
+  if (st.user && st.user.level_name) {
+    $("#navLevel").textContent = "当前 " + st.user.level_name;
+    $("#navLevel").style.display = "inline-block";
+  }
+  loadWords(1);
+})();
+
+async function loadWords(page) {
+  curPage = page;
+  curLevel = $("#selLevel").value;
+  const q = $("#searchBox").value.trim().toLowerCase();
+  $("#wordBox").innerHTML = '<div class="loading-block"><span class="spinner"></span>加载词库</div>';
+  try {
+    const all = await loadLevel(curLevel);
+    let filtered = all;
+    if (q) filtered = all.filter(w => w.w.toLowerCase().includes(q) || (w.cn || "").includes(q));
+    totalWords = filtered.length;
+    $("#totalLabel").textContent = (LEVELS[curLevel] || curLevel) + " 共 " + totalWords.toLocaleString() + " 词";
+    const pageWords = filtered.slice((page - 1) * PER, page * PER);
+    const rows = pageWords.map(w => {
+      const phr = (w.ph || []).slice(0, 2).map(p =>
+        `<span class="phrase-item"><b>${esc(p.p)}</b> ${esc(p.c)}</span>`).join("");
+      const sen = (w.se || []).slice(0, 1).map(s =>
+        `<span class="sent-item">${esc(s.e)} · ${esc(s.c)}</span>`).join("");
+      const rem = w.rm ? `<span class="rem">记忆法：${esc(w.rm)}</span>` : "";
+      return `<div class="word-row">
+        <div class="word-main">
+          <div class="w">${esc(w.w)}</div>
+          <div class="p">${esc(w.us || "")}</div>
+          <div class="pos">${esc(w.p || "")}</div>
+          ${speakOk ? `<button class="speak-btn" style="margin-top:6px" data-say="${esc(w.w)}" onclick="speak(this.dataset.say)">听</button>` : ""}
+        </div>
+        <div class="word-detail">
+          <div class="cn">${esc(w.cn || "")}</div>
+          ${phr}
+          ${sen}
+          ${rem}
+        </div>
+      </div>`;
+    }).join("");
+    $("#wordBox").innerHTML = rows ? `<div class="word-list">${rows}</div>`
+      : '<div class="empty"><span class="big">无</span>没有找到匹配的单词</div>';
+    const pages = Math.max(1, Math.ceil(totalWords / PER));
+    $("#pager").innerHTML = `
+      <button class="btn btn-ghost btn-sm" ${page <= 1 ? "disabled" : ""} onclick="loadWords(${page - 1})">上一页</button>
+      <span class="info">${page} / ${pages}</span>
+      <button class="btn btn-ghost btn-sm" ${page >= pages ? "disabled" : ""} onclick="loadWords(${page + 1})">下一页</button>`;
+  } catch (e) {
+    $("#wordBox").innerHTML = '<div class="error-banner">加载失败: ' + e.message + "</div>";
+  }
+}
+</script>
+</body>
+</html>
