@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语学习工作台 · 水平测评</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.hero {
+  padding: 56px 0 32px;
+  max-width: 720px;
+}
+.hero .eyebrow {
+  font-family: var(--font-mono); font-size: .76rem;
+  color: var(--accent); letter-spacing: .14em; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.hero .sub { margin-top: 14px; font-size: 1.02rem; }
+.hero-meta { display: flex; gap: 24px; margin-top: 22px; flex-wrap: wrap; }
+.hero-meta .stat { display: flex; flex-direction: column; }
+.hero-meta .stat b { font-family: var(--font-mono); font-size: 1.25rem; color: var(--accent); }
+.hero-meta .stat span { font-size: .76rem; color: var(--ink-3); }
+
+/* 测评流程卡片 */
+.step-card { margin-top: 24px; }
+.steps { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.step-dot { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--ink-3); }
+.step-dot .n {
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-inset); font-size: .7rem; font-weight: 700;
+}
+.step-dot.on { color: var(--ink); }
+.step-dot.on .n { background: var(--accent); color: #fff; }
+.step-dot.done .n { background: var(--accent-soft); color: var(--accent); }
+
+/* 测评入口 */
+.assess-start { text-align: center; padding: 30px 10px; }
+.assess-start .big { font-size: 2.4rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; margin-bottom: 6px; }
+.assess-start p { color: var(--ink-2); font-size: .92rem; max-width: 420px; margin: 0 auto 20px; }
+
+/* 结果区 */
+.result-wrap { margin-top: 20px; }
+
+/* 右侧: 学情概览 */
+.side-stack { display: flex; flex-direction: column; gap: 16px; }
+
+/* 词库悬浮按钮 */
+.lib-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; margin-bottom: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all .18s ease;
+}
+.lib-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-softer);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(31, 107, 58, .12);
+}
+.lib-btn .lib-name { color: var(--ink); font-size: .9rem; font-weight: 600; }
+.lib-btn .lib-count { font-family: var(--font-mono); font-size: .78rem; color: var(--accent); font-weight: 700; }
+.lib-btn:hover .lib-count { color: var(--accent-strong); }
+
+@media (min-width: 860px) {
+  .hero { padding: 72px 0 40px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="brand"><span class="brand-mark">EN</span>英语学习工作台</div>
+    <div class="nav-spacer"></div>
+    <a class="nav-link active" href="index.html">水平测评</a>
+    <a class="nav-link" href="study.html">学习任务</a>
+    <span id="navLevel" class="badge-level" style="display:none"></span>
+  </div>
+</nav>
+
+<main class="container page">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="eyebrow">English Workbench</div>
+    <h1>先测水平，再定计划</h1>
+    <p class="sub">四轮智能对话摸清你的真实英语水平，从人教小学到大学六级 15,219 个词条中为你匹配合适的起点。回答要诚实，因为计划只对诚实的人有效。</p>
+    <div class="hero-meta">
+      <div class="stat"><b>15,219</b><span>词库词条</span></div>
+      <div class="stat"><b>10</b><span>水平等级</span></div>
+      <div class="stat"><b>8</b><span>任务题型</span></div>
+      <div class="stat"><b>AI</b><span>全程智能验收</span></div>
+    </div>
+  </section>
+
+  <div class="grid g2" style="align-items:start">
+
+    <!-- 左: 测评主流程 -->
+    <div>
+      <section class="card step-card" id="assessCard">
+        <div class="steps" id="steps">
+          <div class="step-dot on" data-step="1"><span class="n">1</span>智能问答</div>
+          <div class="step-dot" data-step="2"><span class="n">2</span>水平判定</div>
+          <div class="step-dot" data-step="3"><span class="n">3</span>开始学习</div>
+        </div>
+
+        <!-- 起始 -->
+        <div id="assessStart">
+          <div class="assess-start">
+            <div class="big">Ready?</div>
+            <p>考官会用中文提问，从最简单的自我介绍开始，难度逐步爬升。预计 4 到 6 轮，全程约 3 分钟。</p>
+            <button class="btn btn-primary btn-lg" onclick="startAssess()">开始测评</button>
+          </div>
+        </div>
+
+        <!-- 对话 -->
+        <div id="assessChat" style="display:none">
+          <div class="chat" id="chatBox"></div>
+          <div class="chat-input-row">
+            <input class="input" id="chatInput" placeholder="输入你的回答，回车发送" onkeydown="if(event.key==='Enter')sendAnswer()">
+            <button class="btn btn-primary" id="sendBtn" onclick="sendAnswer()">发送</button>
+          </div>
+          <div style="margin-top:10px; text-align:right">
+            <button class="btn btn-ghost btn-sm" onclick="finishAssess()">直接出结果</button>
+          </div>
+        </div>
+
+        <!-- 结果 -->
+        <div id="assessResult" style="display:none"></div>
+      </section>
+
+      <div id="assessError"></div>
+    </div>
+
+    <!-- 右: 学情概览 -->
+    <aside class="side-stack">
+      <section class="card">
+        <div class="section-title"><span class="idx">LIBRARY</span><h2>词库覆盖</h2></div>
+        <div id="levelStats"><div class="loading-block"><span class="spinner"></span>加载词库统计</div></div>
+      </section>
+      <section class="card">
+        <div class="section-title"><span class="idx">HOW</span><h2>工作台怎么用</h2></div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:.88rem;color:var(--ink-2)">
+          <div><b style="color:var(--ink)">1</b> 完成水平测评，得到等级建议</div>
+          <div><b style="color:var(--ink)">2</b> 在「学习任务」页选择时长与目标</div>
+          <div><b style="color:var(--ink)">3</b> AI 生成每日计划，逐题练习</div>
+          <div><b style="color:var(--ink)">4</b> 任务验收通过后打卡，每天进步</div>
+          <div><b style="color:var(--ink)">5</b> 页面底部随时中英互译</div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+</main>
+
+<!-- 底部翻译栏 -->
+<div class="translate-bar">
+  <div class="translate-inner">
+    <span class="translate-dir">中英互译</span>
+    <input class="input" id="transInput" placeholder="输入英文或中文，回车翻译" onkeydown="if(event.key==='Enter')doTranslate()">
+    <button class="btn btn-soft btn-sm" onclick="doTranslate()">翻译</button>
+  </div>
+  <div class="translate-result" id="transResult">
+    <div class="t-text" id="transSrc"></div>
+    <div class="t-out" id="transOut"></div>
+  </div>
+</div>
+
+<footer class="footer">英语学习工作台 · 词库数据来自公开整理的人教版与四六级词汇表 · 智能体由 DeepSeek 驱动</footer>
+
+<script src="app.js"></script>
+<script>
+let chatHistory = [];
+let assessing = false;
+let navLevelEl = $("#navLevel");
+
+// 载入词库概览
+loadLevelIndex().then(d => {
+  const stats = d.levels || {};
+  const ls = $("#levelStats");
+  ls.innerHTML = Object.entries(stats).map(([k, v]) => `
+    <a class="lib-btn" href="words.html?level=${k}" title="点击浏览 ${v.name} 词库">
+      <span class="lib-name">${v.name}</span>
+      <span class="lib-count">${v.count.toLocaleString()} 词</span>
+    </a>`).join("");
+}).catch(() => { $("#levelStats").innerHTML = '<div class="empty">词库加载失败</div>'; });
+
+// 已有水平则显示
+{
+  const st = loadState();
+  if (st.user && st.user.level_name) {
+    navLevelEl.textContent = "当前 " + st.user.level_name;
+    navLevelEl.style.display = "inline-block";
+  }
+}
+
+function addMsg(role, text) {
+  const box = $("#chatBox");
+  const div = document.createElement("div");
+  div.className = "msg " + (role === "ai" ? "ai" : "me");
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+function addTyping() {
+  const box = $("#chatBox");
+  const div = document.createElement("div");
+  div.className = "msg ai typing";
+  div.textContent = "思考中";
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function startAssess() {
+  $("#assessStart").style.display = "none";
+  $("#assessChat").style.display = "block";
+  $("#chatInput").focus();
+  assessing = true;
+  setStep(1);
+  askAI();
+}
+
+function setStep(n) {
+  document.querySelectorAll(".step-dot").forEach(el => {
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle("on", s === n);
+    el.classList.toggle("done", s < n);
+  });
+}
+
+async function askAI() {
+  $("#sendBtn").disabled = true;
+  $("#chatInput").disabled = true;
+  const typing = addTyping();
+  try {
+    const d = await ai("/api/assess", { messages: chatHistory, final: false });
+    typing.remove();
+    if (d.reply) {
+      addMsg("ai", d.reply);
+      chatHistory.push({ role: "assistant", content: d.reply });
+    }
+  } catch (e) {
+    typing.textContent = "AI 服务错误: " + (e.message || e);
+  }
+  $("#sendBtn").disabled = false;
+  $("#chatInput").disabled = false;
+  $("#chatInput").focus();
+}
+
+async function sendAnswer() {
+  const input = $("#chatInput");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  addMsg("me", text);
+  chatHistory.push({ role: "user", content: text });
+  await askAI();
+}
+
+async function finishAssess() {
+  if (!chatHistory.length) {
+    addMsg("ai", "我们还没开始对话。先回答第一题，或直接点「开始测评」重新开始。");
+    return;
+  }
+  setStep(2);
+  $("#sendBtn").disabled = true;
+  $("#chatInput").disabled = true;
+  const typing = addTyping();
+  typing.textContent = "正在判定你的水平";
+  try {
+    const d = await ai("/api/assess", { messages: chatHistory, final: true });
+    typing.remove();
+    if (d.result) {
+      renderResult(d.result);
+      const st = loadState();
+      st.user.level = d.result.level;
+      st.user.level_name = d.result.level_name;
+      st.user.assessed_at = new Date().toISOString();
+      saveState(st);
+    }
+  } catch (e) {
+    typing.textContent = "AI 服务错误: " + (e.message || e);
+  }
+  $("#sendBtn").disabled = false;
+  $("#chatInput").disabled = false;
+}
+
+function renderResult(r) {
+  const wrap = $("#assessResult");
+  const strengths = (r.strengths || []).map(s => '<span class="pill ok">' + s + "</span>").join("");
+  const weaks = (r.weaknesses || []).map(w => '<span class="pill warn">' + w + "</span>").join("");
+  const tasks = (r.recommended_tasks || []).map(t => '<span class="pill">' + t + "</span>").join("");
+  wrap.style.display = "block";
+  wrap.innerHTML = `
+    <div class="result-hero">
+      <div style="font-size:.8rem;color:var(--ink-2);margin-bottom:4px">测评结果</div>
+      <div class="result-level">${r.level_name || "未定"}</div>
+      <p style="margin-top:8px;font-size:.92rem;color:var(--ink-2)">${r.summary || ""}</p>
+      ${strengths ? '<div class="pill-row"><span style="font-size:.78rem;color:var(--ink-3);align-self:center">优势</span>' + strengths + "</div>" : ""}
+      ${weaks ? '<div class="pill-row"><span style="font-size:.78rem;color:var(--ink-3);align-self:center">短板</span>' + weaks + "</div>" : ""}
+      ${tasks ? '<div class="pill-row"><span style="font-size:.78rem;color:var(--ink-3);align-self:center">建议</span>' + tasks + "</div>" : ""}
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="goStudy('${r.level || "cet4"}')">按此水平布置任务</button>
+        <button class="btn btn-ghost" onclick="restartAssess()">重新测评</button>
+      </div>
+    </div>`;
+  setStep(3);
+  navLevelEl.textContent = "当前 " + (r.level_name || "");
+  navLevelEl.style.display = "inline-block";
+}
+
+function restartAssess() {
+  chatHistory = [];
+  $("#assessResult").innerHTML = "";
+  $("#assessResult").style.display = "none";
+  $("#chatBox").innerHTML = "";
+  $("#assessChat").style.display = "none";
+  $("#assessStart").style.display = "block";
+  setStep(1);
+}
+
+function goStudy(level) {
+  window.location.href = "study.html?level=" + level;
+}
+
+// ---- 翻译栏 ----
+const transResult = $("#transResult");
+async function doTranslate() {
+  const input = $("#transInput");
+  const text = input.value.trim();
+  if (!text) return;
+  transResult.classList.remove("show");
+  try {
+    const d = await translate(text);
+    if (d.translated) {
+      $("#transSrc").textContent = (d.direction === "zh2en" ? "中译英" : "英译中") + " · " + text;
+      $("#transOut").textContent = d.translated;
+      transResult.classList.add("show");
+    }
+  } catch (e) {
+    $("#transOut").textContent = "翻译失败: " + (e.message || e);
+    $("#transSrc").textContent = "";
+    transResult.classList.add("show");
+  }
+}
+// 点击其他区域收起翻译结果
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".translate-bar") && !e.target.closest(".translate-result")) {
+    transResult.classList.remove("show");
+  }
+});
+</script>
+</body>
+</html>
