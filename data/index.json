@@ -1,0 +1,44 @@
+{
+ "levels": {
+  "primary3": {
+   "name": "小学三年级",
+   "count": 134
+  },
+  "primary4": {
+   "name": "小学四年级",
+   "count": 186
+  },
+  "primary5": {
+   "name": "小学五年级",
+   "count": 283
+  },
+  "primary6": {
+   "name": "小学六年级",
+   "count": 233
+  },
+  "junior7": {
+   "name": "初中七年级",
+   "count": 880
+  },
+  "junior8": {
+   "name": "初中八年级",
+   "count": 878
+  },
+  "junior9": {
+   "name": "初中九年级",
+   "count": 551
+  },
+  "senior": {
+   "name": "高中",
+   "count": 3538
+  },
+  "cet4": {
+   "name": "大学四级",
+   "count": 4544
+  },
+  "cet6": {
+   "name": "大学六级",
+   "count": 3992
+  }
+ }
+}
