@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语学习工作台 · 学习任务</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 计划头部 */
+.plan-hero {
+  background: linear-gradient(135deg, var(--accent-soft), var(--accent-softer));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius-card);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.plan-hero h2 { font-size: 1.25rem; font-weight: 750; }
+.plan-hero .meta { color: var(--ink-2); font-size: .86rem; margin-top: 6px; display: flex; gap: 16px; flex-wrap: wrap; }
+.plan-hero .meta b { color: var(--accent); }
+
+/* 设置区 */
+.setup-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 720px) {
+  .setup-grid { grid-template-columns: 1fr 1fr; }
+  .setup-full { grid-column: 1 / -1; }
+}
+.range-row { display: flex; align-items: center; gap: 12px; }
+.range-row input[type=range] { flex: 1; accent-color: var(--accent); }
+.range-val { font-family: var(--font-mono); font-size: .9rem; font-weight: 700; color: var(--accent); min-width: 84px; text-align: right; }
+
+/* 任务类型说明 */
+.type-legend { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; font-size: .8rem; color: var(--ink-3); }
+@media (min-width: 720px) { .type-legend { grid-template-columns: 1fr 1fr; } }
+.type-legend div { display: flex; gap: 8px; align-items: baseline; }
+.type-legend code { font-family: var(--font-mono); font-size: .74rem; color: var(--accent); }
+
+/* 阶段条 */
+.phase-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.phase {
+  flex: 1; min-width: 120px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: var(--radius-card);
+  border: 1px solid var(--line-strong); background: var(--bg-elevated);
+  font-size: .86rem; color: var(--ink-3);
+}
+.phase .pn {
+  width: 24px; height: 24px; border-radius: 50%; flex: 0 0 24px;
+  display: grid; place-items: center; font-size: .74rem; font-weight: 700;
+  background: var(--bg-inset);
+}
+.phase.on { border-color: var(--accent); color: var(--ink); }
+.phase.on .pn { background: var(--accent); color: #fff; }
+.phase.done { border-color: color-mix(in srgb, var(--ok) 45%, transparent); color: var(--ok); }
+.phase.done .pn { background: var(--ok-bg); color: var(--ok); }
+.phase .pl { font-weight: 650; }
+.phase .ps { display: block; font-size: .72rem; color: var(--ink-3); }
+
+/* 学习卡片 */
+.learn-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 720px) { .learn-grid { grid-template-columns: 1fr 1fr; } }
+.learn-card {
+  background: var(--bg-elevated); border: 1px solid var(--line);
+  border-radius: var(--radius-card); padding: 16px; cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.learn-card:hover { border-color: var(--accent); box-shadow: var(--shadow-1); }
+.learn-card .lc-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.learn-card .lc-word { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; flex: 1; }
+.learn-card .lc-phonetic { font-family: var(--font-mono); font-size: .82rem; color: var(--ink-2); }
+.learn-card .lc-pos { font-size: .74rem; color: var(--ink-3); }
+.learn-card .lc-cn { font-size: .92rem; margin: 4px 0 10px; min-height: 22px; }
+.learn-card .lc-hidden { display: none; }
+.learn-card.flipped .lc-hidden { display: block; }
+.learn-card.flipped { border-color: var(--accent); }
+.learn-card.flipped .lc-front { display: none; }
+.learn-detail { font-size: .8rem; color: var(--ink-2); margin-top: 6px; line-height: 1.7; }
+.learn-detail b { color: var(--ink); font-weight: 650; }
+.learn-detail .phrase-item { display: block; }
+.learn-detail .sent-item { display: block; margin-top: 2px; }
+.learn-detail .rem { display: block; margin-top: 6px; padding: 8px 10px; background: var(--accent-softer); border-radius: 6px; color: var(--ink); font-size: .78rem; border-left: 3px solid var(--accent); }
+.learn-card .lc-hint { font-size: .72rem; color: var(--ink-3); margin-top: 10px; }
+
+/* 学习卡评分条 */
+.learn-rate { display: flex; gap: 8px; margin-top: 10px; }
+.rate-btn { flex: 1; border: 1px solid var(--line-strong); background: var(--bg-elevated); border-radius: 8px; padding: 8px 0; font-size: .82rem; cursor: pointer; transition: all .15s ease; }
+.rate-btn:hover { transform: translateY(-1px); }
+.rate-btn.good { color: var(--ok); }
+.rate-btn.good:hover, .rate-btn.good.sel { background: var(--ok-bg); border-color: var(--ok); font-weight: 650; }
+.rate-btn.hard { color: var(--warn); }
+.rate-btn.hard:hover, .rate-btn.hard.sel { background: var(--warn-bg); border-color: var(--warn); font-weight: 650; }
+.rate-btn.again { color: var(--bad); }
+.rate-btn.again:hover, .rate-btn.again.sel { background: var(--bad-bg); border-color: var(--bad); font-weight: 650; }
+.rate-btn:disabled { opacity: .5; cursor: default; transform: none; }
+
+/* 发音按钮 */
+.speak-btn {
+  border: 1px solid var(--line-strong); background: var(--bg-elevated);
+  border-radius: 50%; width: 34px; height: 34px; flex: 0 0 34px;
+  display: grid; place-items: center; cursor: pointer; font-size: .9rem;
+  color: var(--accent); transition: all .15s ease;
+}
+.speak-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+/* 进度 */
+.learn-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.learn-progress .bar { flex: 1; height: 6px; background: var(--bg-inset); border-radius: 3px; overflow: hidden; }
+.learn-progress .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .3s ease; }
+.learn-progress .pct { font-family: var(--font-mono); font-size: .78rem; color: var(--accent); }
+
+/* 作文要求 */
+.writing-req {
+  background: var(--accent-softer);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  font-size: .85rem;
+  color: var(--ink-2);
+  line-height: 1.8;
+}
+.writing-req div { color: var(--ink); }
+.writing-req div::first-letter { color: var(--accent); font-weight: 700; }
+
+/* 练习区 */
+.quiz-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.quiz-toolbar .spacer { flex: 1; }
+.cloze-passage {
+  background: var(--bg-inset); border: 1px solid var(--line);
+  border-radius: var(--radius-input); padding: 14px 16px;
+  font-size: .95rem; line-height: 2; margin-bottom: 10px; white-space: pre-wrap;
+}
+.cloze-blanks { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 720px) { .cloze-blanks { grid-template-columns: 1fr 1fr; } }
+.cloze-blank { display: flex; align-items: center; gap: 8px; }
+.cloze-blank label { font-family: var(--font-mono); font-size: .78rem; color: var(--accent); flex: 0 0 52px; }
+.cloze-blank input { flex: 1; }
+
+/* 打卡日历 */
+.cal { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; }
+.cal-day { flex: 0 0 46px; text-align: center; }
+.cal-dot { width: 42px; height: 42px; margin: 0 auto 4px; border-radius: 12px; display: grid; place-items: center; font-family: var(--font-mono); font-size: .82rem; font-weight: 700; border: 1px solid var(--line-strong); color: var(--ink-2); }
+.cal-dot.done { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 40%, transparent); color: var(--ok); }
+.cal-dot.today { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+.cal-day small { font-size: .64rem; color: var(--ink-3); }
+
+/* 积分 / 等级 / 徽章 */
+.score-hero { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
+.score-num { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 800; color: var(--accent); }
+.score-lv { font-size: .92rem; font-weight: 700; }
+.score-next { font-size: .74rem; color: var(--ink-3); }
+.score-bar { height: 5px; background: var(--bg-inset); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.score-bar i { display: block; height: 100%; background: var(--accent); }
+.badge-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge-item { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; padding: 5px 12px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.badge-item.locked { background: var(--bg-inset); color: var(--ink-3); border-color: var(--line); }
+
+/* 复习区 */
+.review-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--warn-bg); color: var(--warn); border-radius: var(--radius-input); font-size: .84rem; margin-bottom: 12px; }
+
+.hidden { display: none !important; }
+.fade-in { animation: rise .3s ease; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="brand"><span class="brand-mark">EN</span>英语学习工作台</div>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="index.html">水平测评</a>
+    <a class="nav-link active" href="study.html">学习任务</a>
+    <span id="navLevel" class="badge-level" style="display:none"></span>
+  </div>
+</nav>
+
+<main class="container page">
+
+  <!-- 第 1 步: 学习设置 -->
+  <section id="setupSection">
+    <h1 class="display" style="margin-bottom:6px">定制你的学习计划</h1>
+    <p class="sub" style="margin-bottom:20px">告诉 AI 你有多少时间、想练什么，它为你拆解成每天的具体任务。每天先学新词卡片，再练同批词汇，验收通过即打卡。</p>
+
+    <div class="card">
+      <div class="setup-grid">
+        <div class="field">
+          <label for="selLevel">当前水平</label>
+          <select class="select" id="selLevel"></select>
+        </div>
+        <div class="field">
+          <label for="selGoal">学习目标（可选）</label>
+          <input class="input" id="selGoal" placeholder="例如：一个月后通过四级 / 期末考进前十 / 日常交流">
+        </div>
+        <div class="field">
+          <label>学习周期</label>
+          <div class="range-row">
+            <input type="range" id="selDays" min="3" max="30" value="7" oninput="updateRange('selDays','daysVal','天')">
+            <span class="range-val" id="daysVal">7 天</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>每天投入</label>
+          <div class="range-row">
+            <input type="range" id="selMin" min="10" max="120" step="5" value="30" oninput="updateRange('selMin','minVal','分钟')">
+            <span class="range-val" id="minVal">30 分钟</span>
+          </div>
+        </div>
+        <div class="field setup-full">
+          <label>任务类型（可多选，建议 2-4 种轮换）</label>
+          <div class="chips" id="typeChips">
+            <label class="chip on"><input type="checkbox" value="cn2en" checked>中译英</label>
+            <label class="chip on"><input type="checkbox" value="en2cn" checked>英译中</label>
+            <label class="chip on"><input type="checkbox" value="spell" checked>单词拼写</label>
+            <label class="chip"><input type="checkbox" value="phrase">短语拼写</label>
+            <label class="chip"><input type="checkbox" value="sentence">句子翻译</label>
+            <label class="chip"><input type="checkbox" value="relword">同根词</label>
+            <label class="chip"><input type="checkbox" value="writing">作文</label>
+            <label class="chip"><input type="checkbox" value="cloze">完形填空</label>
+          </div>
+          <div class="type-legend">
+            <div><code>中译英</code><span>看中文写英文单词</span></div>
+            <div><code>英译中</code><span>看英文写中文意思</span></div>
+            <div><code>单词拼写</code><span>根据中文和音标拼写</span></div>
+            <div><code>短语拼写</code><span>根据中文写固定搭配</span></div>
+            <div><code>句子翻译</code><span>中文句子译成英文</span></div>
+            <div><code>同根词</code><span>由词根联想派生词</span></div>
+            <div><code>作文</code><span>AI 出题并批改打分</span></div>
+            <div><code>完形填空</code><span>短文挖空填词</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+        <button class="btn btn-primary btn-lg" id="btnPlan" onclick="genPlan()">生成学习计划</button>
+        <span class="muted">生成约需 20-40 秒，AI 会结合你的时间精确拆分任务</span>
+      </div>
+      <div id="planError"></div>
+    </div>
+  </section>
+
+  <!-- 第 2 步: 计划视图 -->
+  <section id="planSection" class="hidden">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <h1 class="display" style="flex:1;font-size:1.5rem">我的学习计划</h1>
+      <button class="btn btn-ghost btn-sm" onclick="showSetup()">重新定制计划</button>
+    </div>
+    <div id="planHero"></div>
+
+    <div class="grid g2" style="align-items:start">
+      <!-- 左: 计划天数 + 学习流程 -->
+      <div>
+        <section class="card">
+          <div class="section-title"><span class="idx">PLAN</span><h2>每日计划</h2></div>
+          <div class="daytabs" id="dayTabs"></div>
+          <div id="dayDetail">
+            <div class="empty">选择一个日期查看任务</div>
+          </div>
+        </section>
+      </div>
+      <!-- 右: 积分 + 打卡 -->
+      <aside class="side-stack">
+        <section class="card">
+          <div class="section-title"><span class="idx">SCORE</span><h2>学习积分</h2></div>
+          <div id="scoreBox"><div class="empty">学习并打卡后获得积分</div></div>
+        </section>
+        <section class="card">
+          <div class="section-title"><span class="idx">BADGES</span><h2>成就徽章</h2></div>
+          <div id="badgeBox"><div class="empty">完成挑战解锁徽章</div></div>
+        </section>
+        <section class="card">
+          <div class="section-title"><span class="idx">CHECK-IN</span><h2>打卡记录</h2></div>
+          <div id="checkinBox"><div class="empty">完成一天任务并通过验收后，即可打卡</div></div>
+        </section>
+        <section class="card">
+          <div class="section-title"><span class="idx">STREAK</span><h2>连续打卡</h2></div>
+          <div class="checkin-card">
+            <div class="checkin-stamp done" id="streakIcon">天</div>
+            <div>
+              <div class="streak" id="streakNum">0 天</div>
+              <div class="muted">坚持是学习唯一的捷径</div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="section-title"><span class="idx">HISTORY</span><h2>历史计划</h2></div>
+          <div id="historyBox"><div class="empty">每次生成计划都会拍快照保存</div></div>
+        </section>
+        <section class="card">
+          <div class="section-title"><span class="idx">TOOLS</span><h2>工具</h2></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetPlans()">重置计划与打卡</button>
+            <button class="btn btn-ghost btn-sm" onclick="location.href='/'">重新测评水平</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 底部: 学习计划历史记录 -->
+  <section id="historySection" class="hidden">
+    <div class="card" style="margin-top:8px">
+      <div class="section-title"><span class="idx">ARCHIVE</span><h2>学习计划历史记录</h2></div>
+      <p class="sub" style="margin-bottom:14px">每次生成的计划都会自动存档，点击任意一条可切换查看或继续学习。</p>
+      <div id="historyList"><div class="loading-block"><span class="spinner"></span>加载历史</div></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 底部翻译栏 -->
+<div class="translate-bar">
+  <div class="translate-inner">
+    <span class="translate-dir">中英互译</span>
+    <input class="input" id="transInput" placeholder="输入英文或中文，回车翻译" onkeydown="if(event.key==='Enter')doTranslate()">
+    <button class="btn btn-soft btn-sm" onclick="doTranslate()">翻译</button>
+  </div>
+  <div class="translate-result" id="transResult">
+    <div class="t-text" id="transSrc"></div>
+    <div class="t-out" id="transOut"></div>
+  </div>
+</div>
+
+<footer class="footer">英语学习工作台 · 词库数据来自公开整理的人教版与四六级词汇表 · 智能体由 DeepSeek 驱动</footer>
+
+<script src="app.js"></script>
+<script>
+let state = null;
+let curPlanId = null;
+let curDay = 1;
+let dayData = null;
+let dayQuiz = [];
+let rateMap = {};
+let curLevelCache = {};  // 当前计划级别词缓存
+
+const TYPE_NAMES = { cn2en: "中译英", en2cn: "英译中", spell: "单词拼写", phrase: "短语拼写", sentence: "句子翻译", relword: "同根词", writing: "作文", cloze: "完形填空" };
+const ALL_BADGES = [
+  ["first_checkin", "初次打卡"], ["streak3", "三日之约"], ["streak7", "一周坚持"],
+  ["perfect_day", "完美一天"], ["first_writing", "提笔成章"],
+  ["vocab100", "词汇破百"], ["vocab300", "词汇三百"], ["cloze_master", "完形高手"],
+];
+
+(async function init() {
+  const qs = new URLSearchParams(location.search);
+  const preLevel = qs.get("level");
+  try {
+    const d = await loadLevelIndex();
+    const sel = $("#selLevel");
+    sel.innerHTML = Object.entries(d.levels || LEVELS).map(([k, v]) =>
+      `<option value="${k}" ${k === preLevel ? "selected" : ""}>${v.name || v}</option>`).join("");
+    if (preLevel && !state) {} // 水平从测评页带来, 后端判定过
+  } catch (e) {}
+  state = loadState();
+  if (state.user && state.user.level_name) {
+    $("#navLevel").textContent = "当前 " + state.user.level_name;
+    $("#navLevel").style.display = "inline-block";
+  }
+  // 恢复计划: 用当前激活计划 (最新生成的)
+  const planIds = Object.keys(state.plans || {});
+  if (planIds.length) {
+    const latest = planIds.sort().reverse()[0];
+    curPlanId = latest;
+    $("#setupSection").classList.add("hidden");
+    showPlan(state.plans[latest]);
+  }
+  renderScore();
+  renderCheckins();
+  loadHistory();
+
+  // chips 点击切换
+  document.querySelectorAll("#typeChips input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      inp.closest(".chip").classList.toggle("on", inp.checked);
+    });
+  });
+})();
+
+function updateRange(id, labelId, unit) {
+  document.getElementById(labelId).textContent = document.getElementById(id).value + " " + unit;
+}
+function getSelectedTypes() { return [...document.querySelectorAll("#typeChips input:checked")].map(i => i.value); }
+
+// ---------- 生成计划 ----------
+async function genPlan() {
+  const level = $("#selLevel").value;
+  const days = parseInt($("#selDays").value);
+  const minutes = parseInt($("#selMin").value);
+  const goal = $("#selGoal").value.trim();
+  const types = getSelectedTypes();
+  if (!types.length) { $("#planError").innerHTML = '<div class="error-banner">请至少选择一种任务类型</div>'; return; }
+  $("#planError").innerHTML = "";
+  $("#btnPlan").disabled = true;
+  $("#btnPlan").textContent = "AI 生成中...";
+  try {
+    const idx = await loadLevelIndex();
+    const cnt = (idx.levels && idx.levels[level] && idx.levels[level].count) || 4000;
+    const d = await ai("/api/plan", { level, days, minutes_per_day: minutes, task_types: types, goal, word_count: cnt });
+    if (d.plan_id && d.plan) {
+      curPlanId = d.plan_id;
+      const planObj = { created: new Date().toISOString(), level, days, minutes_per_day: minutes, task_types: types, goal, plan: d.plan, completion: {} };
+      state.plans[curPlanId] = planObj;
+      // 快照历史
+      state.plan_history = state.plan_history || [];
+      state.plan_history.unshift({ plan_id: curPlanId, created: planObj.created, level, level_name: LEVELS[level] || level, days, minutes_per_day: minutes, task_types: types, goal, plan_title: d.plan.plan_title || "学习计划", plan: d.plan });
+      if (state.plan_history.length > 50) state.plan_history = state.plan_history.slice(0, 50);
+      saveState(state);
+      showPlan(planObj);
+      renderCheckins();
+      loadHistory();
+      $("#planSection").classList.remove("hidden");
+      $("#planSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (d.error) { $("#planError").innerHTML = '<div class="error-banner">' + d.error + "</div>"; }
+  } catch (e) { $("#planError").innerHTML = '<div class="error-banner">AI 服务错误: ' + (e.message || e) + "</div>"; }
+  $("#btnPlan").disabled = false;
+  $("#btnPlan").textContent = "生成学习计划";
+}
+
+// ---------- 展示计划 ----------
+function showPlan(planObj) {
+  $("#planSection").classList.remove("hidden");
+  const plan = planObj.plan || planObj;
+  const days = plan.daily_plan || [];
+  const level = planObj.level || "cet4";
+  const levelName = LEVELS[level] || level;
+  $("#planHero").innerHTML = `
+    <div class="plan-hero">
+      <h2>${esc(plan.plan_title || "学习计划")}</h2>
+      <div class="meta">
+        <span>水平 <b>${levelName}</b></span>
+        <span>周期 <b>${planObj.days || days.length} 天</b></span>
+        <span>每天 <b>${planObj.minutes_per_day || 30} 分钟</b></span>
+        ${planObj.goal ? "<span>目标 <b>" + esc(planObj.goal) + "</b></span>" : ""}
+      </div>
+    </div>`;
+  const tabs = days.map((d, i) => {
+    const dn = i + 1;
+    const done = (state.checkins && Object.values(state.checkins).some(c => c.some(x => x.plan_id === curPlanId && x.day === dn)));
+    return `<div class="daytab ${dn === curDay ? "on" : ""}" onclick="selectDay(${dn})">
+      Day ${dn}<small>${d.date || "第" + dn + "天"}</small></div>`;
+  }).join("");
+  $("#dayTabs").innerHTML = tabs;
+  if (curDay > days.length) curDay = 1;
+  selectDay(curDay, days);
+}
+
+async function selectDay(dn, daysOverride) {
+  curDay = dn;
+  document.querySelectorAll(".daytab").forEach((el, i) => el.classList.toggle("on", i + 1 === dn));
+  const plan = (state.plans[curPlanId] || {}).plan || {};
+  const days = daysOverride || plan.daily_plan || [];
+  const meta = days[dn - 1] || {};
+  $("#dayDetail").innerHTML = `<div class="loading-block"><span class="spinner"></span>正在加载 Day ${dn} 学习内容</div>`;
+  try {
+    const d = await buildDayTasks(dn, meta);
+    dayData = d;
+    dayQuiz = d.quiz || [];
+    rateMap = {};
+    renderLearnPhase(d);
+  } catch (e) { $("#dayDetail").innerHTML = '<div class="error-banner">任务加载失败: ' + e.message + "</div>"; }
+}
+
+// ---------- 构建当天任务 (本地词库 + Worker 特殊题) ----------
+async function buildDayTasks(day, meta) {
+  const plan = state.plans[curPlanId] || {};
+  const level = plan.level || "cet4";
+  const learned = state.learned_words[curPlanId] || {};
+  const today = todayStr();
+
+  // 到期复习
+  const due = dueWordsForLevel(level, learned, today);
+  const learnCount = due.length ? 6 : 8;
+
+  // 学习卡: 未学过的词
+  const exclude = Object.keys(learned);
+  let newWords = await pickWords(level, learnCount, exclude);
+  if (newWords.length < learnCount) {
+    const extra = await pickWords(level, learnCount - newWords.length);
+    for (const w of extra) if (!newWords.some(x => x.w === w.w)) newWords.push(w);
+  }
+  const learnCards = newWords.map(w => ({
+    word: w.w, usphone: w.us || "", pos: w.p || "", trans_cn: w.cn || "",
+    phrases: (w.ph || []).map(p => ({ phrase: p.p, cn: p.c })),
+    sentences: (w.se || []).map(s => ({ en: s.e, cn: s.c })),
+    relwords: (w.re || []).map(r => ({ word: r })),
+    rem_method: w.rm || "",
+  }));
+  // 复习卡 (从已学词找回完整信息)
+  const reviewCards = [];
+  if (due.length) {
+    const all = await loadLevel(level);
+    const byWord = {};
+    all.forEach(w => { byWord[w.w] = w; });
+    for (const word of due) {
+      const w = byWord[word];
+      if (!w) continue;
+      reviewCards.push({
+        word: w.w, usphone: w.us || "", pos: w.p || "", trans_cn: w.cn || "",
+        phrases: (w.ph || []).map(p => ({ phrase: p.p, cn: p.c })),
+        sentences: (w.se || []).map(s => ({ en: s.e, cn: s.c })),
+        relwords: (w.re || []).map(r => ({ word: r })),
+        rem_method: w.rm || "",
+      });
+    }
+  }
+
+  // 练习: 学习+复习词出题
+  const quizSource = [...learnCards, ...reviewCards].map(card => ({
+    w: card.word, cn: card.trans_cn, us: card.usphone, p: card.pos,
+    ph: card.phrases.map(p => ({ p: p.phrase, c: p.cn })),
+    se: card.sentences.map(s => ({ e: s.en, c: s.cn })),
+    re: card.relwords.map(r => r.word),
+  }));
+  const taskTypes = (meta && meta.task_type_list) || plan.task_types || ["cn2en", "en2cn", "spell"];
+  const vocabTypes = taskTypes.filter(t => ["cn2en","en2cn","spell","phrase","sentence","relword"].includes(t));
+  const specialTypes = taskTypes.filter(t => ["writing","cloze"].includes(t));
+  const vocabCount = specialTypes.length ? Math.max(2, 10 - 3 * specialTypes.length) : quizSource.length;
+  const vocabTasks = makeVocabTasksFrom(quizSource, vocabTypes.length ? vocabTypes : ["cn2en","en2cn","spell"], Math.min(quizSource.length, vocabCount));
+
+  // 特殊题 (Worker 命题)
+  const specialTasks = [];
+  const learnWords = [...learnCards, ...reviewCards].map(x => x.word);
+  for (const stype of specialTypes) {
+    try {
+      const sp = await ai("/api/special", { level, task_type: stype, words: learnWords.slice(0, 8) });
+      specialTasks.push(sp);
+    } catch (e) {}
+  }
+  return { day, learn: learnCards, review: reviewCards, quiz: vocabTasks.concat(specialTasks), day_meta: meta || {}, level: LEVELS[level] || level };
+}
+
+// ---------- 阶段 1: 学习卡片 ----------
+function renderLearnPhase(d) {
+  const learn = d.learn || [];
+  const review = d.review || [];
+  const meta = d.day_meta || {};
+  const focus = meta.focus ? `<div class="muted" style="margin-bottom:12px">今日重点：${esc(meta.focus)}</div>` : "";
+  const reviewBanner = review.length
+    ? `<div class="review-banner">复习 ${review.length} 个到期旧词（间隔重复），先复习再学新的</div>` : "";
+  const allCards = [...review, ...learn];
+  if (!allCards.length) {
+    $("#dayDetail").innerHTML = '<div class="empty"><span class="big">无</span>这一天没有安排学习内容</div>';
+    return;
+  }
+  $("#dayDetail").innerHTML = `
+    ${focus}${reviewBanner}
+    <div class="phase-row">
+      <div class="phase on" id="phLearn"><span class="pn">1</span><div><span class="pl">学习</span><span class="ps">翻卡学词</span></div></div>
+      <div class="phase" id="phQuiz"><span class="pn">2</span><div><span class="pl">练习</span><span class="ps">检验掌握</span></div></div>
+      <div class="phase" id="phVerify"><span class="pn">3</span><div><span class="pl">验收</span><span class="ps">AI 批改打卡</span></div></div>
+    </div>
+    <div class="learn-progress">
+      <span class="muted">学习进度</span><div class="bar"><i id="learnBar" style="width:0%"></i></div><span class="pct" id="learnPct">0/${allCards.length}</span>
+    </div>
+    <div class="learn-grid" id="learnGrid"></div>
+    <div style="margin-top:16px;text-align:center">
+      <button class="btn btn-primary btn-lg" id="btnStartQuiz" onclick="startQuiz()" disabled>完成学习，开始练习</button>
+      <div class="muted" style="margin-top:6px">点卡片翻面查看释义，每个词点一个「认识/模糊/不认识」后自动进入下一张</div>
+    </div>`;
+
+  const grid = $("#learnGrid");
+  allCards.forEach((card, i) => {
+    const phr = (card.phrases || []).slice(0, 3).map(p =>
+      `<span class="phrase-item"><b>${esc(p.phrase)}</b> ${esc(p.cn)}</span>`).join("");
+    const sen = (card.sentences || []).slice(0, 2).map(s =>
+      `<span class="sent-item">${esc(s.en)}<br><span style="color:var(--ink-3)">${esc(s.cn)}</span></span>`).join("");
+    const rel = (card.relwords || []).slice(0, 4).map(r => `${r.word}`).join("、");
+    const rem = card.rem_method ? `<span class="rem">记忆法：${esc(card.rem_method)}</span>` : "";
+    const isReview = i < review.length;
+    const el = document.createElement("div");
+    el.className = "learn-card";
+    el.dataset.wordKey = card.word;
+    el.innerHTML = `
+      <div class="lc-front">
+        <div class="lc-top">
+          <span class="lc-word">${esc(card.word)}</span>
+          ${speakOk ? `<button class="speak-btn" data-say="${esc(card.word)}" onclick="event.stopPropagation();speak(this.dataset.say)">听</button>` : ""}
+        </div>
+        <div class="lc-phonetic">${esc(card.usphone || "")}</div>
+        <div class="lc-cn">${esc((card.trans_cn || "").split("；")[0])}</div>
+        <div class="lc-hint">${isReview ? "复习旧词 · " : "新词 · "}点卡片看完整释义与例句</div>
+      </div>
+      <div class="lc-hidden">
+        <div class="lc-top">
+          <span class="lc-word">${esc(card.word)}</span>
+          ${speakOk ? `<button class="speak-btn" data-say="${esc(card.word)}" onclick="event.stopPropagation();speak(this.dataset.say)">听</button>` : ""}
+        </div>
+        <div class="lc-pos">${esc(card.pos || "")} · ${esc(card.usphone || "")}</div>
+        <div class="learn-detail">
+          <b>释义：</b>${esc(card.trans_cn || "")}<br>
+          ${phr ? `<b>搭配：</b>${phr}<br>` : ""}
+          ${sen ? `<b>例句：</b>${sen}<br>` : ""}
+          ${rel ? `<b>同根：</b>${esc(rel)}<br>` : ""}
+          ${rem}
+        </div>
+        <div class="lc-hint">这个词记住了吗？</div>
+        <div class="learn-rate">
+          <button class="rate-btn again" data-word="${esc(card.word)}" data-rating="again" onclick="rateCard(this)">不认识</button>
+          <button class="rate-btn hard" data-word="${esc(card.word)}" data-rating="hard" onclick="rateCard(this)">模糊</button>
+          <button class="rate-btn good" data-word="${esc(card.word)}" data-rating="good" onclick="rateCard(this)">认识</button>
+        </div>
+      </div>`;
+    el.addEventListener("click", (e) => {
+      if (e.target.closest(".rate-btn") || e.target.closest(".speak-btn")) return;
+      el.classList.toggle("flipped");
+    });
+    if (rateMap[card.word]) {
+      el.classList.add("flipped");
+      const btns = el.querySelectorAll(".rate-btn");
+      btns.forEach(b => { b.disabled = true; if (b.dataset.rating === rateMap[card.word]) b.classList.add("sel"); });
+    }
+    grid.appendChild(el);
+  });
+  updateLearnProgress();
+  const btnQ = $("#btnStartQuiz");
+  if (btnQ && Object.keys(rateMap).length >= allCards.length) {
+    btnQ.disabled = false;
+    btnQ.textContent = "开始练习（" + allCards.length + " 个词）";
+  }
+}
+
+function updateLearnProgress() {
+  const total = (dayData.learn || []).length + (dayData.review || []).length;
+  const done = Object.keys(rateMap).length;
+  $("#learnBar").style.width = (total ? (done / total * 100) : 0) + "%";
+  $("#learnPct").textContent = done + "/" + total;
+}
+
+async function rateCard(btn) {
+  const word = btn.dataset.word;
+  const rating = btn.dataset.rating;
+  if (rateMap[word]) return;
+  rateMap[word] = rating;
+  const card = btn.closest(".learn-card");
+  card.querySelectorAll(".rate-btn").forEach(b => b.disabled = true);
+  btn.classList.add("sel");
+  updateLearnProgress();
+  // 本地记录间隔重复
+  const plan = state.plans[curPlanId] || {};
+  const items = [{ word, rating, level: plan.level || "" }];
+  recordStudyFeedback(state, curPlanId, items);
+  saveState(state);
+  setTimeout(() => {
+    card.classList.remove("flipped");
+    const cards = [...document.querySelectorAll("#learnGrid .learn-card")];
+    const idx = cards.indexOf(card);
+    const next = cards.slice(idx + 1).find(el => !rateMap[el.dataset.wordKey]);
+    if (next) {
+      next.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => next.classList.add("flipped"), 350);
+    }
+  }, 500);
+  const total = (dayData.learn || []).length + (dayData.review || []).length;
+  if (Object.keys(rateMap).length >= total) {
+    const btnQ = $("#btnStartQuiz");
+    if (btnQ) { btnQ.disabled = false; btnQ.textContent = "开始练习（" + total + " 个词）"; }
+  }
+}
+
+// ---------- 阶段 2: 练习 ----------
+function startQuiz() {
+  const st2 = loadState();
+  const learnedCount = Object.keys(rateMap).length;
+  if (learnedCount > 0) {
+    addPoints(st2, curPlanId, learnedCount * 2, "Day " + curDay + " 学习 " + learnedCount + " 个新词");
+    saveState(st2);
+    state = st2;
+    renderScore();
+  }
+  setPhase(2);
+  const meta = dayData.day_meta || {};
+  const focus = meta.focus ? `<div class="muted" style="margin-bottom:12px">今日重点：${meta.focus}</div>` : "";
+  if (!dayQuiz.length) {
+    $("#dayDetail").innerHTML = `${focus}<div class="empty"><span class="big">无</span>这一天没有安排练习，直接验收打卡</div>`;
+    return;
+  }
+  $("#dayDetail").innerHTML = `
+    ${focus}
+    <div class="phase-row">
+      <div class="phase done" id="phLearn"><span class="pn">1</span><div><span class="pl">学习</span><span class="ps">翻卡学词</span></div></div>
+      <div class="phase on" id="phQuiz"><span class="pn">2</span><div><span class="pl">练习</span><span class="ps">检验掌握</span></div></div>
+      <div class="phase" id="phVerify"><span class="pn">3</span><div><span class="pl">验收</span><span class="ps">AI 批改打卡</span></div></div>
+    </div>
+    <div class="quiz-toolbar">
+      <b style="font-size:.95rem">Day ${curDay} 练习</b>
+      <span class="muted">${dayQuiz.length} 题 · 全部通过后可打卡</span>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost btn-sm" onclick="backToLearn()">返回学习</button>
+      <button class="btn btn-primary" id="btnSubmit" onclick="submitAll()">提交验收</button>
+    </div>
+    <div id="quizList" class="quiz"></div>
+    <div id="submitResult"></div>`;
+  const list = $("#quizList");
+  dayQuiz.forEach((task, i) => list.appendChild(renderTask(task, i + 1)));
+}
+
+function backToLearn() { renderLearnPhase(dayData); setPhase(1); }
+
+function setPhase(n) {
+  const map = { 1: "phLearn", 2: "phQuiz", 3: "phVerify" };
+  document.querySelectorAll(".phase").forEach(el => el.classList.remove("on", "done"));
+  const cur = document.getElementById(map[n]);
+  if (cur) cur.classList.add("on");
+  for (let i = 1; i < n; i++) {
+    const el = document.getElementById(map[i]);
+    if (el) el.classList.add("done");
+  }
+}
+
+function renderTask(task, num) {
+  const el = document.createElement("div");
+  el.className = "quiz-item";
+  el.dataset.tid = task.id;
+  const typeName = TYPE_NAMES[task.type] || task.type;
+  const prompt = task.prompt || "";
+  const hint = task.hint || "";
+  let extraReq = "";
+  let inputHtml = "";
+  if (task.type === "writing") {
+    const ap = task.ai_payload || {};
+    const reqs = [];
+    if (ap.requirements) reqs.push(ap.requirements);
+    if (ap.word_count) reqs.push("建议字数 " + ap.word_count + " 词");
+    if (ap.keywords && ap.keywords.length) reqs.push("需用关键词: " + ap.keywords.join("、"));
+    extraReq = reqs.length ? `<div class="writing-req">${reqs.map(r => '<div>' + esc(r) + "</div>").join("")}</div>` : "";
+    inputHtml = `${extraReq}<textarea data-qid="${task.id}" rows="8" placeholder="在这里写作..."></textarea>`;
+  } else if (task.type === "cloze") {
+    const blanks = (task.ai_payload && task.ai_payload.blanks) || [];
+    inputHtml = `<div class="cloze-passage">${esc(task.prompt)}</div><div class="cloze-blanks">` +
+      blanks.map(b => `<div class="cloze-blank"><label>第${b.index}空</label><input class="input" data-qid="${task.id}" data-blank="${b.index}" placeholder="填入单词"></div>`).join("") +
+      `</div>`;
+  } else {
+    inputHtml = `<textarea data-qid="${task.id}" rows="2" placeholder="在这里作答..."></textarea>`;
+  }
+  el.innerHTML = `
+    <div class="quiz-head">
+      <div class="quiz-num">${num}</div>
+      <div style="flex:1"><div class="quiz-type">${esc(typeName)}</div></div>
+      <span class="muted" style="font-size:.72rem">${esc(task.level || "")}</span>
+    </div>
+    <div class="quiz-prompt">${esc(prompt)}</div>
+    <div class="quiz-hint">${esc(hint)}</div>
+    ${inputHtml}
+    <div class="verdict" id="v_${task.id}"></div>`;
+  return el;
+}
+
+function collectAnswers() {
+  const items = {};
+  document.querySelectorAll("[data-qid]").forEach(inp => {
+    const qid = inp.dataset.qid;
+    const v = inp.value.trim();
+    if (inp.dataset.blank) { if (!items[qid]) items[qid] = {}; items[qid][inp.dataset.blank] = v; }
+    else items[qid] = v;
+  });
+  return items;
+}
+
+// ---------- 阶段 3: 验收 ----------
+async function submitAll() {
+  const btn = $("#btnSubmit");
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = "AI 验收中...";
+  const submitted = dayQuiz.map(task => ({ task, answer: (collectAnswers())[task.id] || "" }));
+  try {
+    const d = await ai("/api/verify", { plan_id: curPlanId, day: curDay, tasks: submitted });
+    renderVerdicts(d);
+    if (d.all_pass) {
+      // 打卡
+      const st3 = loadState();
+      const today = todayStr();
+      const dayList = st3.checkins[today] || (st3.checkins[today] = []);
+      const isNew = !dayList.some(x => x.plan_id === curPlanId && x.day === curDay);
+      if (isNew) {
+        dayList.push({ plan_id: curPlanId, day: curDay, time: new Date().toISOString() });
+        // 连续打卡
+        let streak = 0;
+        const cur = new Date();
+        if (!st3.checkins[todayStr()]) { /* today already added */ }
+        const keyOf = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        let cd = new Date();
+        if (!st3.checkins[keyOf(cd)]) cd.setDate(cd.getDate() - 1);
+        while (st3.checkins[keyOf(cd)]) { streak++; cd.setDate(cd.getDate() - 1); }
+        const pts = 20 + (streak > 1 ? (streak - 1) * 5 : 0);
+        addPoints(st3, curPlanId, pts, "Day " + curDay + " 打卡成功 (连续 " + streak + " 天)");
+        if (streak >= 7) awardBadge(st3, "streak7");
+        else if (streak >= 3) awardBadge(st3, "streak3");
+        awardBadge(st3, "first_checkin");
+      }
+      awardBadge(st3, "perfect_day");
+      const types = new Set(d.results.map(r => r.type));
+      if (types.has("writing")) awardBadge(st3, "first_writing");
+      if (types.has("cloze")) awardBadge(st3, "cloze_master");
+      saveState(st3);
+      state = st3;
+      renderCheckins();
+      renderScore();
+      loadHistory();
+      setPhase(3);
+    } else {
+      setPhase(2);
+    }
+  } catch (e) { $("#submitResult").innerHTML = '<div class="error-banner">验收失败: ' + (e.message || e) + "</div>"; }
+  btn.disabled = false;
+  btn.textContent = "提交验收";
+}
+
+function renderVerdicts(d) {
+  $("#submitResult").innerHTML = "";
+  d.results.forEach(r => {
+    const v = document.getElementById("v_" + r.task_id);
+    if (!v) return;
+    v.classList.add("show", r.pass ? "pass" : "fail");
+    let html = `<span class="score-badge">${r.score} 分</span>${r.pass ? "通过" : "未通过"} · ${esc(r.comment || "")}`;
+    if (r.details && r.details.length) html += "<br>" + r.details.map(x => `${x.index}空: 你的「${x.given}」 ${x.correct ? "正确" : "应为 " + x.answer}`).join("；");
+    if (r.suggestions && r.suggestions.length) html += "<br>" + r.suggestions.map(s => "建议: " + s).join("<br>");
+    v.innerHTML = html;
+  });
+  if (d.all_pass) {
+    $("#submitResult").innerHTML += `<div class="checkin-card" style="margin-top:14px;background:var(--ok-bg);border-radius:var(--radius-card)">
+      <div class="checkin-stamp done">天</div>
+      <div><b>Day ${d.day} 全部通过</b><div class="muted">已自动打卡并获得积分，明天继续</div></div>
+    </div>`;
+  } else {
+    $("#submitResult").innerHTML += `<div class="error-banner" style="margin-top:12px">还有题未通过，修改后再次提交验收</div>`;
+  }
+}
+
+// ---------- 积分与徽章 ----------
+function renderScore() {
+  if (!state) return;
+  const p = state.progress || {};
+  const score = p.score || 0;
+  const level = p.level || "青铜学员";
+  const next = p.next_level_points || 100;
+  const prev = [0, 100, 300, 600, 1000, 1800].filter(x => x <= score).pop() || 0;
+  const pct = Math.min(100, Math.round((score - prev) / Math.max(1, (next - prev)) * 100));
+  $("#scoreBox").innerHTML = `
+    <div class="score-hero">
+      <div class="score-num">${score}</div>
+      <div style="flex:1">
+        <div class="score-lv">${level}</div>
+        <div class="score-next">距下一等级还需 ${Math.max(0, next - score)} 分</div>
+        <div class="score-bar"><i style="width:${pct}%"></i></div>
+      </div>
+    </div>`;
+  const have = p.badges || [];
+  $("#badgeBox").innerHTML = `<div class="badge-list">` + ALL_BADGES.map(([k, name]) =>
+    `<span class="badge-item ${have.includes(k) ? "" : "locked"}">${name}${have.includes(k) ? "" : "（未解锁）"}</span>`).join("") + `</div>`;
+}
+
+// ---------- 打卡 ----------
+function renderCheckins() {
+  if (!state) return;
+  const box = $("#checkinBox");
+  if (!box) return;
+  const checkins = state.checkins || {};
+  const dates = Object.keys(checkins).sort().reverse();
+  if (!dates.length) { box.innerHTML = '<div class="empty">完成一天任务并通过验收后，即可打卡</div>'; $("#streakNum").textContent = "0 天"; return; }
+  let streak = 0;
+  const today = new Date();
+  let cur = new Date(today);
+  const keyOf = d => { const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), dd = String(d.getDate()).padStart(2, "0"); return `${y}-${m}-${dd}`; };
+  if (!checkins[keyOf(today)]) cur.setDate(cur.getDate() - 1);
+  while (checkins[keyOf(cur)]) { streak++; cur.setDate(cur.getDate() - 1); }
+  $("#streakNum").textContent = streak + " 天";
+  $("#streakIcon").classList.add("done");
+  let cal = "";
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const key = keyOf(d);
+    const done = !!checkins[key];
+    const isToday = key === keyOf(today);
+    cal += `<div class="cal-day"><div class="cal-dot ${done ? "done" : ""} ${isToday ? "today" : ""}">${d.getDate()}</div><small>${["日", "一", "二", "三", "四", "五", "六"][d.getDay()]}</small></div>`;
+  }
+  box.innerHTML = `<div class="cal">${cal}</div><div class="muted" style="margin-top:8px">最近 7 天 · 绿点表示已打卡</div>`;
+}
+
+// ---------- 历史计划 ----------
+async function loadHistory() {
+  const hist = (state && state.plan_history) || [];
+  const box = $("#historyBox");
+  if (box) {
+    if (!hist.length) box.innerHTML = '<div class="empty">每次生成计划都会拍快照保存</div>';
+    else box.innerHTML = hist.slice(0, 8).map(h => histItem(h, true)).join("");
+  }
+  const sec = $("#historySection");
+  const list = $("#historyList");
+  if (sec && list) {
+    sec.classList.remove("hidden");
+    if (!hist.length) list.innerHTML = '<div class="empty">还没有生成过计划。生成计划后这里会自动存档。</div>';
+    else list.innerHTML = hist.map(h => histItem(h, false)).join("");
+  }
+}
+
+function histItem(h, compact) {
+  const active = h.plan_id === curPlanId;
+  const lv = h.level_name || h.level || "";
+  const types = (h.task_types || []).map(t => TYPE_NAMES[t] || t).join("、");
+  const time = (h.created || "").slice(0, 16).replace("T", " ");
+  return `<div class="task-row" style="cursor:pointer;${active ? "background:var(--accent-softer);border-radius:8px" : ""}" onclick="switchPlan('${h.plan_id}')">
+    <div class="task-body">
+      <div class="t-title">${esc(h.plan_title || "学习计划")} ${active ? '<span style="color:var(--accent);font-size:.72rem">当前</span>' : ""}</div>
+      <div class="t-desc">${lv} · ${h.days || "?"} 天 · ${types || ""}</div>
+      ${compact ? "" : `<div class="t-desc">${esc(time)}</div>`}
+    </div>
+  </div>`;
+}
+
+async function switchPlan(planId) {
+  state = loadState();
+  if (state.plans[planId]) {
+    curPlanId = planId;
+    curDay = 1;
+    dayData = null;
+    rateMap = {};
+    showPlan(state.plans[planId]);
+    loadHistory();
+    $("#planSection").classList.remove("hidden");
+    $("#planSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+// ---------- 重新定制 ----------
+function showSetup() {
+  const plan = (state.plans[curPlanId] || {});
+  if (plan && plan.level) {
+    $("#selLevel").value = plan.level;
+    $("#selDays").value = plan.days || 7;
+    $("#daysVal").textContent = (plan.days || 7) + " 天";
+    $("#selMin").value = plan.minutes_per_day || 30;
+    $("#minVal").textContent = (plan.minutes_per_day || 30) + " 分钟";
+    $("#selGoal").value = plan.goal || "";
+    const wanted = plan.task_types || [];
+    document.querySelectorAll("#typeChips input").forEach(inp => {
+      const on = wanted.includes(inp.value);
+      inp.checked = on;
+      inp.closest(".chip").classList.toggle("on", on);
+    });
+  }
+  $("#planSection").classList.add("hidden");
+  $("#setupSection").classList.remove("hidden");
+  $("#setupSection").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ---------- 重置 ----------
+async function resetPlans() {
+  if (!confirm("确定重置所有计划与打卡记录？")) return;
+  state = loadState();
+  state.plans = {};
+  state.checkins = {};
+  state.learned_words = {};
+  saveState(state);
+  location.reload();
+}
+
+// ---------- 翻译栏 ----------
+const transResult = $("#transResult");
+async function doTranslate() {
+  const input = $("#transInput");
+  const text = input.value.trim();
+  if (!text) return;
+  transResult.classList.remove("show");
+  try {
+    const d = await translate(text);
+    if (d.translated) {
+      $("#transSrc").textContent = (d.direction === "zh2en" ? "中译英" : "英译中") + " · " + text;
+      $("#transOut").textContent = d.translated;
+      transResult.classList.add("show");
+    }
+  } catch (e) { $("#transOut").textContent = "翻译失败: " + (e.message || e); $("#transSrc").textContent = ""; transResult.classList.add("show"); }
+}
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".translate-bar") && !e.target.closest(".translate-result")) transResult.classList.remove("show");
+});
+</script>
+</body>
+</html>
