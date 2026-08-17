@@ -19,7 +19,7 @@ function esc(s) {
 // ============================================================
 
 // >>> 部署时改成你的 Worker 地址 <<<
-const API_BASE = "https://english-workbench.your-worker.workers.dev";
+const API_BASE = "https://english-workbench.1976369416.workers.dev";
 
 // ---------- 词库 ----------
 const LEVELS = {
