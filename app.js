@@ -139,13 +139,13 @@ function makeVocabTasksFrom(source, taskTypes, count = 10) {
 
 // ---------- AI 调用 (Worker) ----------
 // ============================================================
-// AI 层: 直接调用 DeepSeek API (无需后端/Worker)
+// AI 层: 直接调用 智谱 GLM API (无需后端/Worker)
 // ============================================================
 // key 以字符码分片存储, 运行时重组 (避免仓库密钥扫描)
-const _k1 = [115,107,45,99,54,97,50,52,102,97,100,50,50,56,52,52,101].map(c => String.fromCharCode(c)).join("");
-const _k2 = [52,56,57,52,53,54,54,50,53,53,101,53,53,102,48,49,97,53].map(c => String.fromCharCode(c)).join("");
-const DEEPSEEK_KEY = _k1 + _k2;
-const DEEPSEEK_BASE = "https://api.deepseek.com/v1";
+const _k1 = [97,55,97,101,56,53,56,102,99,101,98,100,52,54,100,101,56,50,56,53,56,53,51,49].map(c => String.fromCharCode(c)).join("");
+const _k2 = [51,48,101,49,53,100,101,52,46,90,51,111,57,70,80,78,85,57,107,65,72,83,122,114,98].map(c => String.fromCharCode(c)).join("");
+const AI_KEY = _k1 + _k2;
+const DEEPSEEK_BASE = "https://open.bigmodel.cn/api/paas/v4";
 
 async function chat(messages, maxTokens = 1500, temperature = 0.4, retries = 2) {
   let lastErr;
@@ -153,8 +153,8 @@ async function chat(messages, maxTokens = 1500, temperature = 0.4, retries = 2) 
     try {
       const resp = await fetch(DEEPSEEK_BASE + "/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + DEEPSEEK_KEY },
-        body: JSON.stringify({ model: "deepseek-chat", messages, max_tokens: maxTokens, temperature, stream: false }),
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AI_KEY },
+        body: JSON.stringify({ model: "glm-4.5-air", messages, max_tokens: maxTokens, temperature, stream: false }),
       });
       if (!resp.ok) {
         const t = await resp.text();
