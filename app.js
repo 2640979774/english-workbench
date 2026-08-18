@@ -140,10 +140,13 @@ function makeVocabTasksFrom(source, taskTypes, count = 10) {
 // ---------- AI 调用 (Worker) ----------
 // ============================================================
 // AI 层: 直接调用 智谱 GLM API (无需后端/Worker)
+// ===== AI 服务开关 =====
+// true=启用(需要有效 key), false=关闭(不调用任何 AI API, key 已清空)
+const AI_ENABLED = false;
 // ============================================================
 // key 以字符码分片存储, 运行时重组 (避免仓库密钥扫描)
-const _k1 = [97,55,97,101,56,53,56,102,99,101,98,100,52,54,100,101,56,50,56,53,56,53,51,49].map(c => String.fromCharCode(c)).join("");
-const _k2 = [51,48,101,49,53,100,101,52,46,90,51,111,57,70,80,78,85,57,107,65,72,83,122,114,98].map(c => String.fromCharCode(c)).join("");
+const _k1 = [];
+const _k2 = [];
 const AI_KEY = _k1 + _k2;
 const DEEPSEEK_BASE = "https://open.bigmodel.cn/api/paas/v4";
 
@@ -190,6 +193,9 @@ const LEVEL_NAMES = {
 function norm(s) { return String(s || "").toLowerCase().replace(/[^a-z\u4e00-\u9fff]/g, ""); }
 
 async function ai(path, payload) {
+  if (!AI_ENABLED) {
+    throw new Error("AI 服务已关闭（暂时停用，防止 API 被他人使用）");
+  }
   switch (path) {
     case "/api/assess": return await aiAssess(payload);
     case "/api/plan": return await aiPlan(payload);
